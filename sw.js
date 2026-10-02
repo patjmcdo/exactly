@@ -1,4 +1,4 @@
-const CACHE = 'exactly-v1';
+const CACHE = 'exactly-v2';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-512.png'];
 
 self.addEventListener('install', e => {

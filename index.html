@@ -111,7 +111,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   </div>
   <div class="spacer"></div>
   <div class="stack">
-    <button class="primary" id="playDaily">Play #<span id="homeNo">1</span></button>
+    <button class="primary" id="playDaily">Play</button>
     <button class="ghost" id="playPractice">Practice</button>
     <button class="ghost" id="install" hidden>Install app</button>
     <p class="ios" id="iosHint" hidden>On iPhone: tap Share → <b>Add to Home Screen</b></p>
@@ -322,14 +322,13 @@ function startPractice() { mode = 'practice'; rounds = []; round = 0; setupRound
 const liveStreak = () => { const d = dayNum(); return (store.lastDay === d || store.lastDay === d - 1) ? (store.streak || 0) : 0; };
 function renderHome() {
   const day = dayNum(), d = store.daily;
-  $('#homeNo').textContent = puzzleNo();
   $('#sStreak').textContent = liveStreak();
   $('#sBest').textContent = store.bestTotal != null ? store.bestTotal + 'ms' : '—';
   $('#sPlayed').textContent = store.played || 0;
   const btn = $('#playDaily');
   if (d && d.day === day && d.done) btn.textContent = `Today's result · #${puzzleNo()}`;
-  else if (d && d.day === day && d.rounds && d.rounds.filter(Boolean).length) btn.innerHTML = `Continue #${puzzleNo()} · round ${d.rounds.filter(Boolean).length + 1}/${ROUNDS}`;
-  else btn.innerHTML = `Play #${puzzleNo()}`;
+  else if (d && d.day === day && d.rounds && d.rounds.filter(Boolean).length) btn.textContent = `Continue #${puzzleNo()} · round ${d.rounds.filter(Boolean).length + 1}/${ROUNDS}`;
+  else btn.textContent = `Play #${puzzleNo()}`;
 }
 function shareText() {
   const d = store.daily, total = d.total, g = grade(total);
