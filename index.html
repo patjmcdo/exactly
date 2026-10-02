@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EXACTLY — Stop the clock. Exactly.</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="description" content="A daily 5-round timing game. The clock goes blind — stop it exactly on target. Share your score, keep your streak.">
+<meta name="theme-color" content="#0b0b10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EXACTLY">
+<meta property="og:title" content="EXACTLY — Stop the clock. Exactly.">
+<meta property="og:description" content="5 rounds. The clock goes blind. How close can you get? New puzzle every day.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-512.png">
+<style>
+:root{
+  --bg:#0b0b10; --panel:#14141c; --line:#232330; --text:#f4f4f8; --muted:#8a8a9a;
+  --green:#7cff6b; --yellow:#ffd166; --red:#ff4d6d; --blue:#6bb6ff;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overflow:hidden}
+body{display:flex;flex-direction:column}
+section{flex:1;display:flex;flex-direction:column;padding:calc(var(--sat) + 16px) 20px calc(var(--sab) + 20px);max-width:520px;width:100%;margin:0 auto}
+section[hidden]{display:none}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.primary{width:100%;padding:18px;border-radius:16px;background:var(--text);color:var(--bg);font-weight:800;font-size:18px;letter-spacing:.02em;transition:transform .08s}
+.primary:active{transform:scale(.97)}
+.ghost{width:100%;padding:16px;border-radius:16px;border:1px solid var(--line);color:var(--text);font-weight:600;font-size:16px}
+.ghost:active{background:var(--panel)}
+.spacer{flex:1}
+.stack{display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.center{text-align:center}
+
+/* HOME */
+.logo{font-size:clamp(44px,13vw,64px);font-weight:900;letter-spacing:-.04em;line-height:1;margin-top:8vh}
+.logo span{color:var(--green)}
+.tag{font-size:18px;color:var(--muted);margin:10px 0 0}
+.howto{margin-top:28px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);line-height:1.5;font-size:15px}
+.howto b{color:var(--text)}
+.stats{display:flex;gap:10px;margin:16px 0}
+.stat{flex:1;padding:12px 8px;border-radius:14px;background:var(--panel);border:1px solid var(--line);text-align:center}
+.stat b{display:block;font-size:22px;font-weight:800}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* PLAY */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.bar .ghost{width:44px;height:44px;padding:0;border-radius:12px;font-size:18px}
+.bar .label{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pips{display:flex;gap:6px}
+.pip{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.pip.on{background:var(--text)}
+.pip.exact{background:#fff;box-shadow:0 0 10px var(--green)}
+.pip.sharp{background:var(--green)}
+.pip.close{background:var(--yellow)}
+.pip.off{background:var(--red)}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative}
+.target{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.target b{color:var(--text);font-size:28px;letter-spacing:0;margin-left:8px;vertical-align:-3px}
+.clock{font-size:clamp(72px,24vw,150px);font-weight:700;letter-spacing:-.02em;line-height:1;transition:color .2s}
+.clock.blind{color:var(--muted);opacity:.5}
+.hint{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700;min-height:20px}
+.hint.pulse{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.verdict{position:absolute;left:0;right:0;bottom:8%;text-align:center;animation:pop .22s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.diff{font-size:clamp(36px,11vw,56px);font-weight:800;line-height:1}
+.vlabel{font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;margin-top:8px}
+.c-exact{color:#fff;text-shadow:0 0 18px var(--green),0 0 40px var(--green)}
+.c-sharp{color:var(--green)} .c-close{color:var(--yellow)} .c-off{color:var(--red)}
+.flash{animation:flash .35s ease-out}
+@keyframes flash{from{background:#1c1c28}to{background:var(--bg)}}
+
+/* RESULT */
+.rtitle{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:10px}
+.remoji{font-size:40px;letter-spacing:4px;margin:12px 0 4px;line-height:1.2}
+.rtotal{font-size:clamp(56px,18vw,96px);font-weight:800;line-height:1;letter-spacing:-.03em}
+.rtotal small{font-size:18px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:6px}
+.grade{display:inline-flex;align-items:center;gap:10px;margin-top:10px;padding:8px 14px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-weight:700;font-size:14px}
+.grade b{font-size:20px}
+.rounds{list-style:none;margin:18px 0 0;padding:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+.rounds li{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-top:1px solid var(--line);font-size:15px}
+.rounds li:first-child{border-top:0}
+.rounds .em{font-size:18px;margin-left:10px}
+.toast{position:fixed;left:50%;bottom:calc(var(--sab) + 28px);transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:12px 18px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ios{font-size:13px;color:var(--muted);text-align:center;margin:0}
+</style>
+</head>
+<body>
+
+<section id="home">
+  <div class="logo">EXACT<span>LY</span><span>.</span></div>
+  <p class="tag">Stop the clock. Exactly.</p>
+  <div class="howto">
+    <b>5 rounds. One target each.</b><br>
+    Tap to start, tap to stop. After one second the clock goes <b>blind</b> — trust your gut and stop it on the target. Lowest total wins. New puzzle every day.
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="sStreak">0</b><span>🔥 streak</span></div>
+    <div class="stat"><b id="sBest">—</b><span>best total</span></div>
+    <div class="stat"><b id="sPlayed">0</b><span>played</span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="stack">
+    <button class="primary" id="playDaily">Play #<span id="homeNo">1</span></button>
+    <button class="ghost" id="playPractice">Practice</button>
+    <button class="ghost" id="install" hidden>Install app</button>
+    <p class="ios" id="iosHint" hidden>On iPhone: tap Share → <b>Add to Home Screen</b></p>
+  </div>
+</section>
+
+<section id="play" hidden>
+  <header class="bar">
+    <button class="ghost" id="quit" aria-label="Quit">✕</button>
+    <div class="label" id="roundLabel">Round 1 / 5</div>
+    <div class="pips" id="pips"></div>
+  </header>
+  <div class="stage" id="stage">
+    <div class="target">Target<b class="mono" id="targetVal">3.25</b></div>
+    <div class="clock mono" id="clock">0.000</div>
+    <div class="hint pulse" id="hint">Tap to start</div>
+    <div class="verdict" id="verdict" hidden>
+      <div class="diff mono" id="diffVal">+0.052</div>
+      <div class="vlabel" id="diffLabel">Close</div>
+    </div>
+  </div>
+</section>
+
+<section id="result" hidden>
+  <div class="rtitle">EXACTLY <span id="resNo">#1</span></div>
+  <div class="remoji" id="resEmoji"></div>
+  <div class="rtotal mono"><span id="resTotal">0</span><small>ms off</small></div>
+  <div><span class="grade" id="resGrade"><b>A</b><span>Sharp</span></span></div>
+  <ul class="rounds mono" id="resRounds"></ul>
+  <div class="stats">
+    <div class="stat"><b id="rStreak">0</b><span>🔥 streak</span></div>
+    <div class="stat"><b id="rBest">—</b><span>best total</span></div>
+    <div class="stat"><b id="rPlayed">0</b><span>played</span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="stack">
+    <button class="primary" id="share">Share result</button>
+    <p class="center small muted">Next puzzle in <b class="mono" id="countdown">00:00:00</b></p>
+    <div class="row" style="display:flex;gap:12px">
+      <button class="ghost" id="practice2">Practice</button>
+      <button class="ghost" id="home2">Home</button>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const screens = { home: $('#home'), play: $('#play'), result: $('#result') };
+const show = n => { for (const k in screens) screens[k].hidden = k !== n; };
+
+/* ---------- constants ---------- */
+const ROUNDS = 5, BLIND_AT = 1000, MASK = '•.•••';
+const TIERS = [ // [maxAbsDiffMs, key, label, emoji]
+  [20, 'exact', 'Exact.', '🎯'],
+  [75, 'sharp', 'Sharp', '🟩'],
+  [200, 'close', 'Close', '🟨'],
+  [Infinity, 'off', 'Off', '🟥'],
+];
+const GRADES = [[150,'S','Superhuman'],[300,'A','Sharp'],[600,'B','Solid'],[1000,'C','Human'],[Infinity,'D','Rusty']];
+const tier = d => TIERS.find(t => Math.abs(d) <= t[0]);
+const grade = total => GRADES.find(g => total <= g[0]);
+
+/* ---------- storage ---------- */
+const LS = 'exactly.v1';
+let store = {};
+try { store = JSON.parse(localStorage.getItem(LS)) || {}; } catch {}
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch {} };
+
+/* ---------- daily seed ---------- */
+const dayNum = () => { const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000); };
+const EPOCH_DAY = Math.floor(Date.UTC(2026, 9, 2) / 86400000);
+const puzzleNo = () => dayNum() - EPOCH_DAY + 1;
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function dailyTargets(day) { const r = mulberry32(day * 7919 + 17); const s = new Set(); while (s.size < ROUNDS) s.add(2000 + 250 * Math.floor(r() * 32)); return [...s]; }
+const randomTarget = () => 2000 + 250 * Math.floor(Math.random() * 32);
+
+/* ---------- audio + haptics ---------- */
+const audio = (() => {
+  let ctx;
+  const unlock = () => { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); } catch {} };
+  const tone = (f, dur = .09, type = 'sine', gain = .18, when = 0) => {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + when;
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + .005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + .02);
+  };
+  return { unlock, tone };
+})();
+const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch {} };
+const sfx = {
+  start() { audio.tone(520, .05, 'square', .06); buzz(8); },
+  verdict(key) {
+    if (key === 'exact') { audio.tone(880, .12); audio.tone(1320, .18, 'sine', .18, .09); audio.tone(1760, .25, 'sine', .14, .18); buzz([10, 30, 10, 30, 40]); }
+    else if (key === 'sharp') { audio.tone(660, .1); audio.tone(990, .16, 'sine', .14, .08); buzz([10, 40, 20]); }
+    else if (key === 'close') { audio.tone(440, .12); buzz(20); }
+    else { audio.tone(160, .22, 'sawtooth', .12); buzz(60); }
+  },
+  finish() { [523, 659, 784, 1047].forEach((f, i) => audio.tone(f, .22, 'sine', .14, i * .08)); },
+};
+
+/* ---------- game state ---------- */
+let mode = 'daily', rounds = [], round = 0, target = 0, phase = 'ready', t0 = 0, raf = 0, lockUntil = 0;
+const clock = $('#clock'), hint = $('#hint'), verdict = $('#verdict'), diffVal = $('#diffVal'), diffLabel = $('#diffLabel');
+const fmt = ms => (ms / 1000).toFixed(3);
+const fmtT = ms => (ms / 1000).toFixed(2);
+const signed = d => (d < 0 ? '−' : '+') + fmt(Math.abs(d));
+
+function renderPips() {
+  const el = $('#pips'); el.innerHTML = '';
+  if (mode !== 'daily') return;
+  for (let i = 0; i < ROUNDS; i++) {
+    const p = document.createElement('div'); p.className = 'pip';
+    if (rounds[i]) p.classList.add(tier(rounds[i].e - rounds[i].t)[1]); else if (i === round) p.classList.add('on');
+    el.appendChild(p);
+  }
+}
+function setupRound() {
+  cancelAnimationFrame(raf);
+  phase = 'ready';
+  target = mode === 'daily' ? dailyTargets(dayNum())[round] : randomTarget();
+  $('#targetVal').textContent = fmtT(target);
+  $('#roundLabel').textContent = mode === 'daily' ? `Round ${round + 1} / ${ROUNDS}`
+    : `Practice · best ${store.practiceBest != null ? store.practiceBest + 'ms' : '—'}`;
+  clock.textContent = '0.000'; clock.classList.remove('blind');
+  hint.textContent = 'Tap to start'; hint.classList.add('pulse');
+  verdict.hidden = true;
+  renderPips();
+}
+function tick() {
+  const e = performance.now() - t0;
+  if (e < BLIND_AT) clock.textContent = fmt(e);
+  else if (!clock.classList.contains('blind')) { clock.textContent = MASK; clock.classList.add('blind'); hint.textContent = 'Blind · tap to stop'; }
+  raf = requestAnimationFrame(tick);
+}
+function start() {
+  phase = 'running'; t0 = performance.now();
+  hint.textContent = 'Tap to stop'; hint.classList.remove('pulse');
+  sfx.start();
+  raf = requestAnimationFrame(tick);
+}
+function stop() {
+  const e = Math.round(performance.now() - t0);
+  cancelAnimationFrame(raf);
+  phase = 'stopped'; lockUntil = performance.now() + 450;
+  const d = e - target, tr = tier(d);
+  clock.textContent = fmt(e); clock.classList.remove('blind');
+  diffVal.textContent = signed(d); diffVal.className = 'diff mono c-' + tr[1];
+  diffLabel.textContent = tr[2]; diffLabel.className = 'vlabel c-' + tr[1];
+  verdict.hidden = false;
+  hint.textContent = mode === 'daily' && round === ROUNDS - 1 ? 'Tap for results' : 'Tap to continue';
+  document.body.classList.remove('flash'); void document.body.offsetWidth; document.body.classList.add('flash');
+  sfx.verdict(tr[1]);
+  rounds[round] = { t: target, e };
+  if (mode === 'daily') { store.daily = { day: dayNum(), rounds }; save(); }
+  else {
+    store.practiceRounds = (store.practiceRounds || 0) + 1;
+    if (store.practiceBest == null || Math.abs(d) < store.practiceBest) store.practiceBest = Math.abs(d);
+    save();
+  }
+  renderPips();
+}
+function next() {
+  round++;
+  if (mode === 'daily' && round >= ROUNDS) return finishDaily();
+  setupRound();
+}
+$('#stage').addEventListener('pointerdown', ev => {
+  ev.preventDefault(); audio.unlock();
+  if (phase === 'ready') start();
+  else if (phase === 'running') { if (performance.now() - t0 > 250) stop(); }
+  else if (phase === 'stopped') { if (performance.now() > lockUntil) next(); }
+});
+$('#quit').addEventListener('click', () => { cancelAnimationFrame(raf); phase = 'ready'; renderHome(); show('home'); });
+
+/* ---------- daily flow ---------- */
+function startDaily() {
+  mode = 'daily';
+  const day = dayNum(), d = store.daily;
+  if (d && d.day === day && d.done) return renderResult(), show('result');
+  rounds = (d && d.day === day && Array.isArray(d.rounds)) ? d.rounds.filter(Boolean) : [];
+  round = rounds.length;
+  if (round >= ROUNDS) return finishDaily();
+  setupRound(); show('play');
+}
+function finishDaily() {
+  const day = dayNum();
+  const total = rounds.reduce((s, r) => s + Math.abs(r.e - r.t), 0);
+  if (store.lastDay === day - 1) store.streak = (store.streak || 0) + 1;
+  else if (store.lastDay !== day) store.streak = 1;
+  store.lastDay = day;
+  store.maxStreak = Math.max(store.maxStreak || 0, store.streak);
+  store.played = (store.played || 0) + 1;
+  store.bestTotal = store.bestTotal == null ? total : Math.min(store.bestTotal, total);
+  store.hist = store.hist || {}; const g = grade(total)[1]; store.hist[g] = (store.hist[g] || 0) + 1;
+  store.daily = { day, rounds, done: true, total };
+  save();
+  sfx.finish();
+  renderResult(); show('result');
+}
+function startPractice() { mode = 'practice'; rounds = []; round = 0; setupRound(); show('play'); }
+
+/* ---------- rendering ---------- */
+const liveStreak = () => { const d = dayNum(); return (store.lastDay === d || store.lastDay === d - 1) ? (store.streak || 0) : 0; };
+function renderHome() {
+  const day = dayNum(), d = store.daily;
+  $('#homeNo').textContent = puzzleNo();
+  $('#sStreak').textContent = liveStreak();
+  $('#sBest').textContent = store.bestTotal != null ? store.bestTotal + 'ms' : '—';
+  $('#sPlayed').textContent = store.played || 0;
+  const btn = $('#playDaily');
+  if (d && d.day === day && d.done) btn.textContent = `Today's result · #${puzzleNo()}`;
+  else if (d && d.day === day && d.rounds && d.rounds.filter(Boolean).length) btn.innerHTML = `Continue #${puzzleNo()} · round ${d.rounds.filter(Boolean).length + 1}/${ROUNDS}`;
+  else btn.innerHTML = `Play #${puzzleNo()}`;
+}
+function shareText() {
+  const d = store.daily, total = d.total, g = grade(total);
+  const em = d.rounds.map(r => tier(r.e - r.t)[3]).join('');
+  const url = location.origin.startsWith('http') ? location.origin + location.pathname : '';
+  return `EXACTLY #${puzzleNo()}\n${em}\n${total}ms off · ${g[1]}\n🔥 ${liveStreak()} day streak\n${url}`.trim();
+}
+function renderResult() {
+  const d = store.daily, total = d.total, g = grade(total);
+  $('#resNo').textContent = '#' + puzzleNo();
+  $('#resEmoji').textContent = d.rounds.map(r => tier(r.e - r.t)[3]).join('');
+  $('#resTotal').textContent = total;
+  $('#resGrade').innerHTML = `<b>${g[1]}</b><span>${g[2]}</span>`;
+  $('#resRounds').innerHTML = d.rounds.map(r => {
+    const diff = r.e - r.t, tr = tier(diff);
+    return `<li><span class="muted">${fmtT(r.t)} → ${fmt(r.e)}</span><span><span class="c-${tr[1]}">${signed(diff).replace('0.', '').replace(/^([+−])0*/, '$1')}ms</span><span class="em">${tr[3]}</span></span></li>`;
+  }).join('');
+  $('#rStreak').textContent = liveStreak();
+  $('#rBest').textContent = store.bestTotal + 'ms';
+  $('#rPlayed').textContent = store.played || 0;
+}
+async function share() {
+  const text = shareText();
+  if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(text); toast('Copied to clipboard'); }
+  catch { prompt('Copy your result:', text); }
+}
+let toastT; function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+function msToMidnight() { const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0); return m - n; }
+setInterval(() => { const s = Math.max(0, Math.floor(msToMidnight() / 1000)); $('#countdown').textContent = [s / 3600 | 0, (s / 60) % 60 | 0, s % 60].map(v => String(v).padStart(2, '0')).join(':'); }, 1000);
+
+/* ---------- wiring ---------- */
+$('#playDaily').addEventListener('click', () => { audio.unlock(); startDaily(); });
+$('#playPractice').addEventListener('click', () => { audio.unlock(); startPractice(); });
+$('#practice2').addEventListener('click', startPractice);
+$('#home2').addEventListener('click', () => { renderHome(); show('home'); });
+$('#share').addEventListener('click', share);
+
+/* ---------- install ---------- */
+let deferredPrompt;
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('#install').hidden = false; });
+$('#install').addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#install').hidden = true; });
+if (!standalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) $('#iosHint').hidden = false;
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+renderHome(); show('home');
+})();
+</script>
+</body>
+</html>
